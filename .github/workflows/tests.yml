@@ -1,0 +1,29 @@
+name: 自动测试
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: Python ${{ matrix.python }} 测试
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      matrix:
+        python: ['3.10', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: 检查 Python 语法
+        run: python -m compileall -q app.py football_tool scripts tests
+      - name: 运行测试（模拟素材接口，不需要密钥）
+        run: python -m unittest discover -s tests -v

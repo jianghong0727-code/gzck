@@ -1,0 +1,94 @@
+name: 足球素材一键搜索与下载
+
+on:
+  workflow_dispatch:
+    inputs:
+      query:
+        description: '球员或单个镜头关键词（例如：足球场空镜）'
+        required: true
+        default: 足球场空镜
+        type: string
+      english:
+        description: '英文关键词（可选，修正或跳过自动翻译）'
+        required: false
+        default: ''
+        type: string
+      source:
+        description: '来源：auto 有密钥搜两站，无密钥仅搜 Commons'
+        type: choice
+        default: auto
+        options:
+          - auto
+          - all
+          - commons
+          - pexels
+      max_count:
+        description: '最多下载数量（1–20）'
+        type: number
+        default: 5
+      max_mb:
+        description: '单个视频上限 MB（1–2048）'
+        type: number
+        default: 100
+      total_mb:
+        description: '本次总下载上限 MB（1–4096）'
+        type: number
+        default: 300
+      search_only:
+        description: '只搜索生成清单，不下载视频'
+        type: boolean
+        default: false
+      limit:
+        description: '每来源搜索条数（1–40，仅一页）'
+        type: number
+        default: 12
+
+permissions:
+  contents: read
+
+concurrency:
+  group: football-materials-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  materials:
+    name: 搜索、检查许可并导出
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: 读取项目
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: 准备 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: 搜索并下载许可已确认的素材
+        env:
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          INPUT_QUERY: ${{ inputs.query }}
+          INPUT_ENGLISH: ${{ inputs.english }}
+          INPUT_SOURCE: ${{ inputs.source }}
+          INPUT_MAX_COUNT: ${{ inputs.max_count }}
+          INPUT_MAX_MB: ${{ inputs.max_mb }}
+          INPUT_TOTAL_MB: ${{ inputs.total_mb }}
+          INPUT_SEARCH_ONLY: ${{ inputs.search_only }}
+          INPUT_LIMIT: ${{ inputs.limit }}
+        run: python -m scripts.run_actions
+      - name: 保存素材、清单与预览（报错时也尝试保存）
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: football-materials-${{ github.run_number }}
+          retention-days: 3
+          if-no-files-found: warn
+          path: |
+            output/素材清单.csv
+            output/人工审核清单.csv
+            output/素材记录.json
+            output/素材预览.html
+            output/运行报告.json
+            output/**/*.mp4
+            output/**/*.webm
+            output/**/*.ogv
