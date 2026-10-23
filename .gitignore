@@ -1,0 +1,15 @@
+output/
+work/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+*.mp4
+*.webm
+*.ogv
+*.part
+*.zip
+.DS_Store
